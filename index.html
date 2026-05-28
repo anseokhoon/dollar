@@ -21,7 +21,7 @@ const HIST_AVG_FX = histFxChanges.reduce((a, b) => a + b, 0) / histFxChanges.len
 
 const FX_SCENARIOS = [
   { key: "hist",   label: `역사적 평균 +${(HIST_AVG_FX*100).toFixed(1)}%`,  rate: HIST_AVG_FX, color: "#f59e0b", badge: "실제" },
-  { key: "flat",   label: "보합 0%",       rate: 0.00,  color: "#10b981" },
+  { key: "flat",   label: "보합 0%",        rate: 0.00,  color: "#10b981" },
   { key: "weak2",  label: "원화약세 +2%",  rate: 0.02,  color: "#ef4444" },
   { key: "strong", label: "원화강세 -2%",  rate: -0.02, color: "#60a5fa" },
 ];
@@ -62,6 +62,66 @@ function buildYearly(pmt, accumYrs, deferYrs, r, inf) {
   });
 }
 
+// 📌 렌더링 최적화를 위해 스타일 객체와 하위 컴포넌트를 App 밖으로 분리
+const S = {
+  page: {
+    minHeight:"100vh", background:"linear-gradient(160deg,#0a0a18 0%,#111827 100%)",
+    fontFamily:"'Noto Sans KR',sans-serif", color:"#f1f5f9", padding:"20px 14px 40px",
+  },
+  wrap: { maxWidth:700, margin:"0 auto" },
+  badge: {
+    display:"inline-block", background:"linear-gradient(90deg,#6366f1,#0ea5e9)",
+    borderRadius:6, padding:"4px 16px", fontSize:12, fontWeight:800, letterSpacing:2,
+    marginBottom:12, color:"#fff",
+  },
+  h1: { fontSize:22, fontWeight:900, margin:"0 0 6px", lineHeight:1.3, color:"#fff" },
+  sub: { fontSize:13, color:"#94a3b8", margin:0 },
+  card: (color) => ({
+    background:`linear-gradient(135deg,${color}28,${color}10)`,
+    border:`1.5px solid ${color}55`, borderRadius:14, padding:"16px 14px", textAlign:"center",
+  }),
+  cardLabel: { fontSize:12, color:"#94a3b8", marginBottom:6, fontWeight:600 },
+  cardVal: (color) => ({ fontSize:20, fontWeight:900, color, lineHeight:1.2 }),
+  cardSub: { fontSize:11, color:"#64748b", marginTop:4 },
+  section: {
+    background:"rgba(255,255,255,0.035)", border:"1px solid rgba(255,255,255,0.08)",
+    borderRadius:16, padding:"18px 14px",
+  },
+  sectionTitle: { fontSize:14, fontWeight:800, color:"#cbd5e1", marginBottom:14 },
+  slider: { width:"100%", accentColor:"#6366f1", cursor:"pointer", height:6 },
+  sliderLabel: { fontSize:13, color:"#94a3b8", marginBottom:6, fontWeight:700 },
+  sliderVal: { color:"#e2e8f0", fontWeight:900, fontSize:16 },
+  tab: (on) => ({
+    flex:1, padding:"12px 8px", borderRadius:10, fontSize:14, fontWeight:700,
+    border:`2px solid ${on?"#6366f1":"rgba(255,255,255,0.1)"}`,
+    background: on ? "rgba(99,102,241,0.25)" : "transparent",
+    color: on ? "#a5b4fc" : "#64748b", cursor:"pointer",
+  }),
+  banner: (ok) => ({
+    background: ok ? "rgba(6,182,212,0.12)" : "rgba(239,68,68,0.12)",
+    border:`1.5px solid ${ok?"rgba(6,182,212,0.4)":"rgba(239,68,68,0.4)"}`,
+    borderRadius:12, padding:"14px 18px", textAlign:"center",
+  }),
+};
+
+const SliderRow = ({ label, value, unit, min, max, step, onChange, color="#a5b4fc" }) => (
+  <div style={{ marginBottom:18 }}>
+    <div style={S.sliderLabel}>
+      {label}&nbsp;<span style={{ ...S.sliderVal, color }}>{value}{unit}</span>
+    </div>
+    <input type="range" min={min} max={max} step={step} value={value}
+      onChange={e => onChange(parseFloat(e.target.value))} style={S.slider} />
+  </div>
+);
+
+const ResultCard = ({ label, value, color, sub }) => (
+  <div style={S.card(color)}>
+    <div style={S.cardLabel}>{label}</div>
+    <div style={S.cardVal(color)}>{fmt(value)}</div>
+    {sub && <div style={S.cardSub}>{sub}</div>}
+  </div>
+);
+
 export default function App() {
   const [pmt,    setPmt]    = useState(1500000);
   const [accumY, setAccumY] = useState(10);
@@ -98,81 +158,13 @@ export default function App() {
         "달러(실질)":  Math.round(v.real * fxC),
       };
     });
-  }, [pmt, accumY, deferY, ret, inf]);
+  }, [pmt, accumY, deferY, ret, inf, totalY]);
 
   const FL  = futureData[futureData.length-1];
   const FAE = futureData[accumY] || FL;
   const HL  = histData[histData.length-1];
   const fDiff = FL["달러(실질)"] - FL["원화(실질)"];
   const hDiff = HL["달러(실질)"] - HL["원화(실질)"];
-
-  const S = {
-    page: {
-      minHeight:"100vh",
-      background:"linear-gradient(160deg,#0a0a18 0%,#111827 100%)",
-      fontFamily:"'Noto Sans KR',sans-serif",
-      color:"#f1f5f9",
-      padding:"20px 14px 40px",
-    },
-    wrap: { maxWidth:700, margin:"0 auto" },
-    badge: {
-      display:"inline-block",
-      background:"linear-gradient(90deg,#6366f1,#0ea5e9)",
-      borderRadius:6, padding:"4px 16px",
-      fontSize:12, fontWeight:800, letterSpacing:2,
-      marginBottom:12, color:"#fff",
-    },
-    h1: { fontSize:22, fontWeight:900, margin:"0 0 6px", lineHeight:1.3, color:"#fff" },
-    sub: { fontSize:13, color:"#94a3b8", margin:0 },
-    card: (color) => ({
-      background:`linear-gradient(135deg,${color}28,${color}10)`,
-      border:`1.5px solid ${color}55`,
-      borderRadius:14, padding:"16px 14px",
-      textAlign:"center",
-    }),
-    cardLabel: { fontSize:12, color:"#94a3b8", marginBottom:6, fontWeight:600 },
-    cardVal: (color) => ({ fontSize:20, fontWeight:900, color, lineHeight:1.2 }),
-    cardSub: { fontSize:11, color:"#64748b", marginTop:4 },
-    section: {
-      background:"rgba(255,255,255,0.035)",
-      border:"1px solid rgba(255,255,255,0.08)",
-      borderRadius:16, padding:"18px 14px",
-    },
-    sectionTitle: { fontSize:14, fontWeight:800, color:"#cbd5e1", marginBottom:14 },
-    slider: { width:"100%", accentColor:"#6366f1", cursor:"pointer", height:6 },
-    sliderLabel: { fontSize:13, color:"#94a3b8", marginBottom:6, fontWeight:700 },
-    sliderVal: { color:"#e2e8f0", fontWeight:900, fontSize:16 },
-    tab: (on) => ({
-      flex:1, padding:"12px 8px", borderRadius:10, fontSize:14, fontWeight:700,
-      border:`2px solid ${on?"#6366f1":"rgba(255,255,255,0.1)"}`,
-      background: on ? "rgba(99,102,241,0.25)" : "transparent",
-      color: on ? "#a5b4fc" : "#64748b",
-      cursor:"pointer",
-    }),
-    banner: (ok) => ({
-      background: ok ? "rgba(6,182,212,0.12)" : "rgba(239,68,68,0.12)",
-      border:`1.5px solid ${ok?"rgba(6,182,212,0.4)":"rgba(239,68,68,0.4)"}`,
-      borderRadius:12, padding:"14px 18px", textAlign:"center",
-    }),
-  };
-
-  const SliderRow = ({ label, value, unit, min, max, step, onChange, color="#a5b4fc" }) => (
-    <div style={{ marginBottom:18 }}>
-      <div style={S.sliderLabel}>
-        {label}&nbsp;<span style={{ ...S.sliderVal, color }}>{value}{unit}</span>
-      </div>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={e => onChange(parseFloat(e.target.value))} style={S.slider} />
-    </div>
-  );
-
-  const ResultCard = ({ label, value, color, sub }) => (
-    <div style={S.card(color)}>
-      <div style={S.cardLabel}>{label}</div>
-      <div style={S.cardVal(color)}>{fmt(value)}</div>
-      {sub && <div style={S.cardSub}>{sub}</div>}
-    </div>
-  );
 
   return (
     <div style={S.page}>
@@ -186,17 +178,13 @@ export default function App() {
         </div>
 
         {/* ─ 단계 배너 ─ */}
-        <div style={{
-          display:"grid", gridTemplateColumns:"1fr 1fr",
-          gap:10, marginBottom:20,
-        }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
           {[
             { emoji:"📥", title:`적립 ${accumY}년`, desc:`월 ${(pmt/10000).toFixed(0)}만원 납입`, color:"#6366f1" },
             { emoji:"⏸️", title:`거치 ${deferY}년`, desc:"납입 중단 · 복리 계속", color:"#0ea5e9" },
           ].map(({ emoji, title, desc, color }) => (
             <div key={title} style={{
-              background:`${color}18`,
-              border:`2px solid ${color}55`,
+              background:`${color}18`, border:`2px solid ${color}55`,
               borderRadius:12, padding:"14px 16px",
             }}>
               <div style={{ fontSize:22, marginBottom:4 }}>{emoji}</div>
@@ -219,17 +207,13 @@ export default function App() {
 
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 20px" }}>
             <SliderRow label="📥 적립기간" value={accumY} unit="년"
-              min={3} max={30} step={1} color="#818cf8"
-              onChange={setAccumY} />
+              min={3} max={30} step={1} color="#818cf8" onChange={setAccumY} />
             <SliderRow label="⏸️ 거치기간" value={deferY} unit="년"
-              min={1} max={30} step={1} color="#38bdf8"
-              onChange={setDeferY} />
+              min={1} max={30} step={1} color="#38bdf8" onChange={setDeferY} />
             <SliderRow label="📈 연 수익률" value={ret} unit="%"
-              min={3} max={15} step={0.5} color="#34d399"
-              onChange={setRet} />
+              min={3} max={15} step={0.5} color="#34d399" onChange={setRet} />
             <SliderRow label="🧾 물가상승률" value={inf} unit="%"
-              min={1} max={6} step={0.5} color="#fb923c"
-              onChange={setInf} />
+              min={1} max={6} step={0.5} color="#fb923c" onChange={setInf} />
           </div>
 
           <div style={{ marginTop:4 }}>
@@ -241,8 +225,7 @@ export default function App() {
                   border:`2px solid ${fxKey===key?color:"rgba(255,255,255,0.15)"}`,
                   background: fxKey===key ? `${color}22` : "transparent",
                   color: fxKey===key ? color : "#64748b",
-                  fontSize:13, fontWeight:700,
-                  cursor:"pointer",
+                  fontSize:13, fontWeight:700, cursor:"pointer",
                   display:"flex", alignItems:"center", gap:6,
                 }}>
                   {badge && <span style={{ background:"#f59e0b", color:"#000", borderRadius:4, fontSize:10, fontWeight:900, padding:"1px 5px" }}>{badge}</span>}
@@ -261,24 +244,17 @@ export default function App() {
 
         {/* ══ 미래 탭 ══ */}
         {tab === "future" && (<>
-
-          {/* 결과 카드 */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
             <ResultCard label={`📥 적립완료 (${accumY}년 후)\n원화 실질`}
-              value={FAE["원화(실질)"]} color="#818cf8"
-              sub={`납입 ${fmt(totalPaid)}`} />
+              value={FAE["원화(실질)"]} color="#818cf8" sub={`납입 ${fmt(totalPaid)}`} />
             <ResultCard label={`📥 적립완료 (${accumY}년 후)\n달러 실질`}
-              value={FAE["달러(실질)"]} color="#38bdf8"
-              sub={`${fx.label} 반영`} />
+              value={FAE["달러(실질)"]} color="#38bdf8" sub={`${fx.label} 반영`} />
             <ResultCard label={`💰 거치완료 (${totalY}년 후)\n원화 실질`}
-              value={FL["원화(실질)"]} color="#a78bfa"
-              sub={`물가 ${inf}% 반영`} />
+              value={FL["원화(실질)"]} color="#a78bfa" sub={`물가 ${inf}% 반영`} />
             <ResultCard label={`💰 거치완료 (${totalY}년 후)\n달러 실질`}
-              value={FL["달러(실질)"]} color="#22d3ee"
-              sub="물가+환율 반영" />
+              value={FL["달러(실질)"]} color="#22d3ee" sub="물가+환율 반영" />
           </div>
 
-          {/* 요약 배너 */}
           <div style={{ ...S.banner(fDiff>=0), marginBottom:20 }}>
             <div style={{ fontSize:14, fontWeight:800, color:"#f1f5f9", marginBottom:6 }}>
               {totalY}년 후 실질 자산 차이
@@ -295,7 +271,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* 차트 */}
           <div style={{ ...S.section }}>
             <div style={S.sectionTitle}>
               실질 자산 성장 추이
@@ -325,11 +300,9 @@ export default function App() {
 
         {/* ══ 과거 탭 ══ */}
         {tab === "hist" && (<>
-
           <div style={{
             background:"rgba(245,158,11,0.12)", border:"1.5px solid rgba(245,158,11,0.4)",
-            borderRadius:12, padding:"14px 18px", marginBottom:16,
-            fontSize:13, color:"#fbbf24", lineHeight:1.7,
+            borderRadius:12, padding:"14px 18px", marginBottom:16, fontSize:13, color:"#fbbf24", lineHeight:1.7,
           }}>
             📌 <b>실제 USD/KRW 연평균 환율 적용</b><br/>
             2004년 ₩1,145 → 2025년 ₩1,450<br/>
@@ -397,8 +370,7 @@ export default function App() {
             { icon:"✅", text:"결론: 월 납입액의 30~50%를 달러 자산에 분산 시 물가·환율 이중 헤지 + 거치 복리 효과" },
           ].map(({ icon, text }) => (
             <div key={text} style={{
-              display:"flex", gap:10, alignItems:"flex-start",
-              marginBottom:10, fontSize:13, color:"#cbd5e1", lineHeight:1.6,
+              display:"flex", gap:10, alignItems:"flex-start", marginBottom:10, fontSize:13, color:"#cbd5e1", lineHeight:1.6,
             }}>
               <span style={{ fontSize:18, flexShrink:0 }}>{icon}</span>
               <span>{text}</span>

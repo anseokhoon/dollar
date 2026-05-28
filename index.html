@@ -1,181 +1,330 @@
-import React, { useState, useMemo } from "react";
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, BarChart, Bar, ReferenceLine
-} from "recharts";
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <!-- 모바일 환경(소식지 고객)을 위한 필수 메타 태그 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>은퇴자산 장기투자 비교</title>
+  
+  <!-- React 및 Recharts 라이브러리를 CDN에서 직접 불러옵니다 -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  
+  <!-- 브라우저에서 JSX를 읽을 수 있게 해주는 Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- 폰트 및 기본 여백 초기화 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; padding: 0; background-color: #0a0a18; }
+    * { box-sizing: border-box; }
+    input[type=range] {
+      -webkit-appearance: none;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: #6366f1;
+      cursor: pointer;
+      margin-top: -7px;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
 
-const HISTORICAL_FX: Record<number, number> = {
-  2004: 1145, 2005: 1024, 2006: 955, 2007: 929,
-  2008: 1102, 2009: 1277, 2010: 1156, 2011: 1108,
-  2012: 1127, 2013: 1095, 2014: 1053, 2015: 1131,
-  2016: 1161, 2017: 1131, 2018: 1100, 2019: 1166,
-  2020: 1180, 2021: 1144, 2022: 1292, 2023: 1306,
-  2024: 1363, 2025: 1450,
-};
+  <!-- type="text/babel"을 통해 브라우저가 React 코드를 해석합니다 -->
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+    const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = window.Recharts;
 
-const BASE_FX = 1145;
-const HIST_YEARS = Object.keys(HISTORICAL_FX).map(Number);
+    const HISTORICAL_FX = {
+      2004: 1145, 2005: 1024, 2006: 955, 2007: 929,
+      2008: 1102, 2009: 1277, 2010: 1156, 2011: 1108,
+      2012: 1127, 2013: 1095, 2014: 1053, 2015: 1131,
+      2016: 1161, 2017: 1131, 2018: 1100, 2019: 1166,
+      2020: 1180, 2021: 1144, 2022: 1292, 2023: 1306,
+      2024: 1363, 2025: 1450,
+    };
 
-const histFxChanges = HIST_YEARS.slice(1).map((y, i) =>
-  (HISTORICAL_FX[y] - HISTORICAL_FX[HIST_YEARS[i]]) / HISTORICAL_FX[HIST_YEARS[i]]
-);
-const HIST_AVG_FX = histFxChanges.reduce((a, b) => a + b, 0) / histFxChanges.length;
+    const BASE_FX = 1145;
+    const HIST_YEARS = Object.keys(HISTORICAL_FX).map(Number);
 
-const FX_SCENARIOS = [
-  { key: "hist",   label: `역사적 평균 +${(HIST_AVG_FX*100).toFixed(1)}%`, rate: HIST_AVG_FX, color: "#f59e0b", badge: "실제" },
-  { key: "flat",   label: "보합 0%",        rate: 0.00,  color: "#10b981" },
-  { key: "weak2",  label: "원화약세 +2%",  rate: 0.02,  color: "#ef4444" },
-  { key: "strong", label: "원화강세 -2%",  rate: -0.02, color: "#60a5fa" },
-];
+    const histFxChanges = HIST_YEARS.slice(1).map((y, i) =>
+      (HISTORICAL_FX[y] - HISTORICAL_FX[HIST_YEARS[i]]) / HISTORICAL_FX[HIST_YEARS[i]]
+    );
+    const HIST_AVG_FX = histFxChanges.reduce((a, b) => a + b, 0) / histFxChanges.length;
 
-const fmt = (n: number): string => {
-  if (Math.abs(n) >= 1e8) return `${(n / 1e8).toFixed(1)}억원`;
-  if (Math.abs(n) >= 1e4) return `${(n / 1e4).toFixed(0)}만원`;
-  return `${Math.round(n).toLocaleString()}원`;
-};
+    const FX_SCENARIOS = [
+      { key: "hist",   label: `역사적 평균 +${(HIST_AVG_FX*100).toFixed(1)}%`, rate: HIST_AVG_FX, color: "#f59e0b", badge: "실제" },
+      { key: "flat",   label: "보합 0%",        rate: 0.00,  color: "#10b981" },
+      { key: "weak2",  label: "원화약세 +2%",  rate: 0.02,  color: "#ef4444" },
+      { key: "strong", label: "원화강세 -2%",  rate: -0.02, color: "#60a5fa" },
+    ];
 
-const fmtAxis = (n: number): string => {
-  if (Math.abs(n) >= 1e8) return `${(n / 1e8).toFixed(0)}억`;
-  if (Math.abs(n) >= 1e4) return `${(n / 1e4).toFixed(0)}만`;
-  return n.toString();
-};
+    const fmt = (n) => {
+      if (Math.abs(n) >= 1e8) return `${(n / 1e8).toFixed(1)}억원`;
+      if (Math.abs(n) >= 1e4) return `${(n / 1e4).toFixed(0)}만원`;
+      return `${Math.round(n).toLocaleString()}원`;
+    };
 
-function buildYearly(pmt: number, accumYrs: number, deferYrs: number, r: number, inf: number) {
-  const rm = Math.pow(1 + r, 1 / 12) - 1;
-  const rmR = Math.pow((1 + r) / (1 + inf), 1 / 12) - 1;
-  const rR = (1 + r) / (1 + inf) - 1;
-  const total = accumYrs + deferYrs;
+    const fmtAxis = (n) => {
+      if (Math.abs(n) >= 1e8) return `${(n / 1e8).toFixed(0)}억`;
+      if (Math.abs(n) >= 1e4) return `${(n / 1e4).toFixed(0)}만`;
+      return n.toString();
+    };
 
-  return Array.from({ length: total + 1 }, (_, i) => {
-    if (i === 0) return { nom: 0, real: 0, paid: 0 };
+    function buildYearly(pmt, accumYrs, deferYrs, r, inf) {
+      const rm = Math.pow(1 + r, 1 / 12) - 1;
+      const rmR = Math.pow((1 + r) / (1 + inf), 1 / 12) - 1;
+      const rR = (1 + r) / (1 + inf) - 1;
+      const total = accumYrs + deferYrs;
 
-    if (i <= accumYrs) {
-      const m = i * 12;
-      return {
-        nom: Math.round(pmt * (Math.pow(1 + rm, m) - 1) / rm),
-        real: Math.round(pmt * (Math.pow(1 + rmR, m) - 1) / rmR),
-        paid: pmt * m,
-      };
+      return Array.from({ length: total + 1 }, (_, i) => {
+        if (i === 0) return { nom: 0, real: 0, paid: 0 };
+
+        if (i <= accumYrs) {
+          const m = i * 12;
+          return {
+            nom: Math.round(pmt * (Math.pow(1 + rm, m) - 1) / rm),
+            real: Math.round(pmt * (Math.pow(1 + rmR, m) - 1) / rmR),
+            paid: pmt * m,
+          };
+        }
+
+        const mA = accumYrs * 12;
+        const fvN = pmt * (Math.pow(1 + rm, mA) - 1) / rm;
+        const fvR = pmt * (Math.pow(1 + rmR, mA) - 1) / rmR;
+        const d = i - accumYrs;
+
+        return {
+          nom: Math.round(fvN * Math.pow(1 + r, d)),
+          real: Math.round(fvR * Math.pow(1 + rR, d)),
+          paid: pmt * accumYrs * 12,
+        };
+      });
     }
 
-    const mA = accumYrs * 12;
-    const fvN = pmt * (Math.pow(1 + rm, mA) - 1) / rm;
-    const fvR = pmt * (Math.pow(1 + rmR, mA) - 1) / rmR;
-    const d = i - accumYrs;
-
-    return {
-      nom: Math.round(fvN * Math.pow(1 + r, d)),
-      real: Math.round(fvR * Math.pow(1 + rR, d)),
-      paid: pmt * accumYrs * 12,
+    const S = {
+      page: { minHeight: "100vh", background: "linear-gradient(160deg,#0a0a18 0%,#111827 100%)", fontFamily: "'Noto Sans KR',sans-serif", color: "#f1f5f9", padding: "20px 14px 40px" },
+      wrap: { maxWidth: 700, margin: "0 auto" },
+      badge: { display: "inline-block", background: "linear-gradient(90deg,#6366f1,#0ea5e9)", borderRadius: 6, padding: "4px 16px", fontSize: 12, fontWeight: 800, letterSpacing: 2, marginBottom: 12, color: "#fff" },
+      h1: { fontSize: 22, fontWeight: 900, margin: "0 0 6px", lineHeight: 1.3, color: "#fff", wordBreak: "keep-all" },
+      sub: { fontSize: 13, color: "#94a3b8", margin: 0, wordBreak: "keep-all" },
+      card: (color) => ({ background: `linear-gradient(135deg,${color}28,${color}10)`, border: `1.5px solid ${color}55`, borderRadius: 14, padding: "16px 14px", textAlign: "center" }),
+      cardLabel: { fontSize: 12, color: "#94a3b8", marginBottom: 6, fontWeight: 600 },
+      cardVal: (color) => ({ fontSize: 20, fontWeight: 900, color, lineHeight: 1.2 }),
+      cardSub: { fontSize: 11, color: "#64748b", marginTop: 4 },
+      section: { background: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "18px 14px" },
+      sectionTitle: { fontSize: 14, fontWeight: 800, color: "#cbd5e1", marginBottom: 14 },
+      slider: { width: "100%", accentColor: "#6366f1", cursor: "pointer" },
+      sliderLabel: { fontSize: 13, color: "#94a3b8", marginBottom: 6, fontWeight: 700 },
+      sliderVal: { color: "#e2e8f0", fontWeight: 900, fontSize: 16 },
+      tab: (on) => ({
+        flex: 1, padding: "12px 8px", borderRadius: 10, fontSize: 14, fontWeight: 700,
+        border: `2px solid ${on ? "#6366f1" : "rgba(255,255,255,0.1)"}`,
+        background: on ? "rgba(99,102,241,0.25)" : "transparent",
+        color: on ? "#a5b4fc" : "#64748b", cursor: "pointer", textAlign: "center", wordBreak: "keep-all"
+      }),
+      banner: (ok) => ({
+        background: ok ? "rgba(6,182,212,0.12)" : "rgba(239,68,68,0.12)",
+        border: `1.5px solid ${ok ? "rgba(6,182,212,0.4)" : "rgba(239,68,68,0.4)"}`,
+        borderRadius: 12, padding: "14px 18px", textAlign: "center", wordBreak: "keep-all"
+      }),
     };
-  });
-}
 
-const S = {
-  page: { minHeight: "100vh", background: "linear-gradient(160deg,#0a0a18 0%,#111827 100%)", fontFamily: "'Noto Sans KR',sans-serif", color: "#f1f5f9", padding: "20px 14px 40px" },
-  wrap: { maxWidth: 700, margin: "0 auto" },
-  badge: { display: "inline-block", background: "linear-gradient(90deg,#6366f1,#0ea5e9)", borderRadius: 6, padding: "4px 16px", fontSize: 12, fontWeight: 800, letterSpacing: 2, marginBottom: 12, color: "#fff" },
-  h1: { fontSize: 22, fontWeight: 900, margin: "0 0 6px", lineHeight: 1.3, color: "#fff" },
-  sub: { fontSize: 13, color: "#94a3b8", margin: 0 },
-  card: (color: string) => ({ background: `linear-gradient(135deg,${color}28,${color}10)`, border: `1.5px solid ${color}55`, borderRadius: 14, padding: "16px 14px", textAlign: "center" as const }),
-  cardLabel: { fontSize: 12, color: "#94a3b8", marginBottom: 6, fontWeight: 600 },
-  cardVal: (color: string) => ({ fontSize: 20, fontWeight: 900, color, lineHeight: 1.2 }),
-  cardSub: { fontSize: 11, color: "#64748b", marginTop: 4 },
-  section: { background: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "18px 14px" },
-  sectionTitle: { fontSize: 14, fontWeight: 800, color: "#cbd5e1", marginBottom: 14 },
-  slider: { width: "100%", accentColor: "#6366f1", cursor: "pointer", height: 6 },
-  sliderLabel: { fontSize: 13, color: "#94a3b8", marginBottom: 6, fontWeight: 700 },
-  sliderVal: { color: "#e2e8f0", fontWeight: 900, fontSize: 16 },
-  tab: (on: boolean) => ({
-    flex: 1, padding: "12px 8px", borderRadius: 10, fontSize: 14, fontWeight: 700,
-    border: `2px solid ${on ? "#6366f1" : "rgba(255,255,255,0.1)"}`,
-    background: on ? "rgba(99,102,241,0.25)" : "transparent",
-    color: on ? "#a5b4fc" : "#64748b", cursor: "pointer"
-  }),
-  banner: (ok: boolean) => ({
-    background: ok ? "rgba(6,182,212,0.12)" : "rgba(239,68,68,0.12)",
-    border: `1.5px solid ${ok ? "rgba(6,182,212,0.4)" : "rgba(239,68,68,0.4)"}`,
-    borderRadius: 12, padding: "14px 18px", textAlign: "center" as const
-  }),
-};
-
-const SliderRow = ({ label, value, unit, min, max, step, onChange, color = "#a5b4fc" }: any) => (
-  <div style={{ marginBottom: 18 }}>
-    <div style={S.sliderLabel}>
-      {label}&nbsp;<span style={{ ...S.sliderVal, color }}>{value}{unit}</span>
-    </div>
-    <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(parseFloat(e.target.value))} style={S.slider} />
-  </div>
-);
-
-const ResultCard = ({ label, value, color, sub }: any) => (
-  <div style={S.card(color)}>
-    <div style={S.cardLabel}>{label}</div>
-    <div style={S.cardVal(color)}>{fmt(value)}</div>
-    {sub && <div style={S.cardSub}>{sub}</div>}
-  </div>
-);
-
-export default function App() {
-  const [pmt, setPmt] = useState(1500000);
-  const [accumY, setAccumY] = useState(10);
-  const [deferY, setDeferY] = useState(10);
-  const [ret, setRet] = useState(7);
-  const [inf, setInf] = useState(3);
-  const [tab, setTab] = useState<"future" | "hist">("future");
-  const [fxKey, setFxKey] = useState("hist");
-
-  const fx = FX_SCENARIOS.find(f => f.key === fxKey)!;
-  const totalY = accumY + deferY;
-  const totalPaid = pmt * accumY * 12;
-
-  const futureData = useMemo(() => {
-    const yearly = buildYearly(pmt, accumY, deferY, ret / 100, inf / 100);
-    return yearly.map((v, i) => ({
-      x: `${i}년`,
-      "총납입액": Math.round(v.paid),
-      "원화(실질)": v.real,
-      "달러(실질)": Math.round(v.real * Math.pow(1 + fx.rate, i)),
-    }));
-  }, [pmt, accumY, deferY, ret, inf, fx.rate]);
-
-  const histData = useMemo(() => {
-    const yearly = buildYearly(pmt, accumY, deferY, ret / 100, inf / 100);
-    const maxYears = Math.min(totalY + 1, HIST_YEARS.length);
-
-    return Array.from({ length: maxYears }, (_, i) => {
-      const yr = HIST_YEARS[i];
-      const v = yearly[i] || { nom: 0, real: 0, paid: 0 };
-      const fxC = HISTORICAL_FX[yr] / BASE_FX;
-
-      return {
-        x: `${yr}`,
-        "환율(₩/$)": HISTORICAL_FX[yr],
-        "총납입액": Math.round(v.paid),
-        "원화(실질)": v.real,
-        "달러(실질)": Math.round(v.real * fxC),
-      };
-    });
-  }, [pmt, accumY, deferY, ret, inf, totalY]);
-
-  const FL = futureData[futureData.length - 1];
-  const FAE = futureData[accumY] || FL;
-  const HL = histData[histData.length - 1];
-  const fDiff = FL["달러(실질)"] - FL["원화(실질)"];
-  const hDiff = HL["달러(실질)"] - HL["원화(실질)"];
-
-  return (
-    <div style={S.page}>
-      <div style={S.wrap}>
-        {/* 헤더, 컨트롤, 탭 등 기존 UI 그대로 유지 */}
-        {/* (공간 절약을 위해 생략했으나, 이전에 제공한 JSX 전체를 그대로 사용하세요) */}
-
-        {/* ... [이전 메시지의 return 부분 전체를 여기에 붙여넣으세요] ... */}
-
-        <div style={{ textAlign: "center", marginTop: 30, fontSize: 11, color: "#334155" }}>
-          환율 데이터: 한국은행 · 교육 목적 · 실제 투자 결과와 다를 수 있습니다.
+    const SliderRow = ({ label, value, displayVal, unit, min, max, step, onChange, color = "#a5b4fc" }) => (
+      <div style={{ marginBottom: 18 }}>
+        <div style={S.sliderLabel}>
+          {label}&nbsp;<span style={{ ...S.sliderVal, color }}>{displayVal || value}{unit}</span>
         </div>
+        <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(parseFloat(e.target.value))} style={S.slider} />
       </div>
-    </div>
-  );
-}
+    );
+
+    const ResultCard = ({ label, value, color, sub }) => (
+      <div style={S.card(color)}>
+        <div style={S.cardLabel}>{label}</div>
+        <div style={S.cardVal(color)}>{fmt(value)}</div>
+        {sub && <div style={S.cardSub}>{sub}</div>}
+      </div>
+    );
+
+    function App() {
+      const [pmt, setPmt] = useState(1500000);
+      const [accumY, setAccumY] = useState(10);
+      const [deferY, setDeferY] = useState(10);
+      const [ret, setRet] = useState(7);
+      const [inf, setInf] = useState(3);
+      const [tab, setTab] = useState("future");
+      const [fxKey, setFxKey] = useState("hist");
+
+      const fx = FX_SCENARIOS.find(f => f.key === fxKey);
+      const totalY = accumY + deferY;
+      const totalPaid = pmt * accumY * 12;
+
+      const futureData = useMemo(() => {
+        const yearly = buildYearly(pmt, accumY, deferY, ret / 100, inf / 100);
+        return yearly.map((v, i) => ({
+          x: `${i}년`,
+          "총납입액": Math.round(v.paid),
+          "원화(실질)": v.real,
+          "달러(실질)": Math.round(v.real * Math.pow(1 + fx.rate, i)),
+        }));
+      }, [pmt, accumY, deferY, ret, inf, fx.rate]);
+
+      const histData = useMemo(() => {
+        const yearly = buildYearly(pmt, accumY, deferY, ret / 100, inf / 100);
+        const maxYears = Math.min(totalY + 1, HIST_YEARS.length);
+
+        return Array.from({ length: maxYears }, (_, i) => {
+          const yr = HIST_YEARS[i];
+          const v = yearly[i] || { nom: 0, real: 0, paid: 0 };
+          const fxC = HISTORICAL_FX[yr] / BASE_FX;
+
+          return {
+            x: `${yr}`,
+            "환율(₩/$)": HISTORICAL_FX[yr],
+            "총납입액": Math.round(v.paid),
+            "원화(실질)": v.real,
+            "달러(실질)": Math.round(v.real * fxC),
+          };
+        });
+      }, [pmt, accumY, deferY, ret, inf, totalY]);
+
+      const FL = futureData[futureData.length - 1];
+      const HL = histData[histData.length - 1];
+      const fDiff = FL["달러(실질)"] - FL["원화(실질)"];
+      const hDiff = HL["달러(실질)"] - HL["원화(실질)"];
+
+      const currentDiff = tab === "future" ? fDiff : hDiff;
+      const isUsdBetter = currentDiff >= 0;
+
+      return (
+        <div style={S.page}>
+          <div style={S.wrap}>
+            {/* 헤더 */}
+            <div style={S.badge}>달러 자산의 마법</div>
+            <h1 style={S.h1}>원화 vs 달러 장기투자 비교</h1>
+            <p style={S.sub}>환율 변동이 장기 구매력에 미치는 영향 분석</p>
+
+            {/* 재치있는 강조 문구 */}
+            <div style={{ marginTop: 16, padding: "12px", background: "rgba(252, 211, 77, 0.08)", border: "1px solid rgba(252, 211, 77, 0.2)", borderRadius: 10, fontSize: 13.5, color: "#cbd5e1", textAlign: "center", lineHeight: 1.5, wordBreak: "keep-all" }}>
+              💡 <strong style={{ color: "#fcd34d", letterSpacing: 0.5 }}>"국밥은 원화로 결제해도, 은퇴자산엔 달러가 필수!"</strong><br/>
+              <span style={{ fontSize: 12, color: "#94a3b8" }}>계란도 한 바구니에 안 담는데, 내 소중한 노후를 원화(₩)에만 몰빵할 순 없죠.</span>
+            </div>
+
+            {/* 탭 컨트롤 */}
+            <div style={{ display: "flex", gap: 10, margin: "24px 0" }}>
+              <div style={S.tab(tab === "future")} onClick={() => setTab("future")}>
+                미래 시뮬레이션
+              </div>
+              <div style={S.tab(tab === "hist")} onClick={() => setTab("hist")}>
+                과거 백테스트 (2004~)
+              </div>
+            </div>
+
+            {/* 입력 섹션 */}
+            <div style={S.section}>
+              <div style={S.sectionTitle}>투자 설정</div>
+              <SliderRow label="월 납입액" value={pmt} displayVal={fmt(pmt)} unit="" min={100000} max={10000000} step={100000} onChange={setPmt} color="#10b981" />
+              <SliderRow label="납입 기간" value={accumY} unit="년" min={1} max={30} step={1} onChange={setAccumY} color="#6366f1" />
+              <SliderRow label="거치 기간" value={deferY} unit="년" min={0} max={30} step={1} onChange={setDeferY} color="#6366f1" />
+              <SliderRow label="예상 수익률" value={ret} unit="%" min={1} max={15} step={0.5} onChange={setRet} color="#f59e0b" />
+              <SliderRow label="예상 물가상승" value={inf} unit="%" min={0} max={10} step={0.5} onChange={setInf} color="#ef4444" />
+            </div>
+
+            {/* 환율 시나리오 (미래 탭에서만 표시) */}
+            {tab === "future" && (
+              <div style={{ ...S.section, marginTop: 16 }}>
+                <div style={S.sectionTitle}>환율 시나리오</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {FX_SCENARIOS.map((s) => (
+                    <div key={s.key} onClick={() => setFxKey(s.key)} style={{ ...S.tab(fxKey === s.key), padding: "10px 4px", fontSize: 13 }}>
+                      {s.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 결과 요약 카드 */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, margin: "24px 0" }}>
+              <ResultCard label="총 납입원금" value={totalPaid} color="#94a3b8" />
+              <ResultCard label="원화투자 최종가치" value={tab === "future" ? FL["원화(실질)"] : HL["원화(실질)"]} color="#6366f1" />
+              <div style={{ gridColumn: "1 / -1" }}>
+                <ResultCard
+                  label={`달러투자 최종가치 (${tab === "future" ? fx.label : "과거환율 반영"})`}
+                  value={tab === "future" ? FL["달러(실질)"] : HL["달러(실질)"]}
+                  color="#0ea5e9"
+                  sub={`원화투자 대비 차액: ${isUsdBetter ? '+' : ''}${fmt(currentDiff)}`}
+                />
+              </div>
+            </div>
+
+            {/* 결과 배너 */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={S.banner(isUsdBetter)}>
+                <strong style={{ color: isUsdBetter ? "#06b6d4" : "#ef4444", fontSize: 15 }}>
+                  {isUsdBetter ? "달러 자산 편입이 장기적으로 유리했습니다!" : "해당 시나리오에서는 원화 투자가 유리합니다."}
+                </strong>
+              </div>
+            </div>
+
+            {/* 차트 섹션 */}
+            <div style={{ ...S.section, height: 360, padding: "24px 10px 10px 0" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                {tab === "future" ? (
+                  <LineChart data={futureData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                    <XAxis dataKey="x" stroke="#94a3b8" fontSize={12} tickLine={false} />
+                    <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={fmtAxis} width={55} tickLine={false} />
+                    <Tooltip formatter={(val) => fmt(val)} contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: 8, color: "#f1f5f9" }} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Line type="monotone" dataKey="원화(실질)" stroke="#6366f1" strokeWidth={3} dot={false} />
+                    <Line type="monotone" dataKey="달러(실질)" stroke="#0ea5e9" strokeWidth={3} dot={false} />
+                    <ReferenceLine x={`${accumY}년`} stroke="#f59e0b" strokeDasharray="3 3" label={{ position: "insideTopLeft", value: "납입종료", fill: "#f59e0b", fontSize: 12 }} />
+                  </LineChart>
+                ) : (
+                  <LineChart data={histData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                    <XAxis dataKey="x" stroke="#94a3b8" fontSize={12} tickLine={false} />
+                    <YAxis yAxisId="left" stroke="#94a3b8" fontSize={12} tickFormatter={fmtAxis} width={55} tickLine={false} />
+                    <YAxis yAxisId="right" orientation="right" stroke="#f59e0b" fontSize={12} domain={["dataMin - 50", "dataMax + 50"]} tickLine={false} width={45} />
+                    <Tooltip formatter={(val, name) => name === "환율(₩/$)" ? `${val}원` : fmt(val)} contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: 8, color: "#f1f5f9" }} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Line yAxisId="left" type="monotone" dataKey="원화(실질)" stroke="#6366f1" strokeWidth={3} dot={false} />
+                    <Line yAxisId="left" type="monotone" dataKey="달러(실질)" stroke="#0ea5e9" strokeWidth={3} dot={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="환율(₩/$)" stroke="#f59e0b" strokeWidth={1.5} dot={false} strokeDasharray="4 4" />
+                  </LineChart>
+                )}
+              </ResponsiveContainer>
+            </div>
+
+            {/* 푸터 */}
+            <div style={{ textAlign: "center", marginTop: 30, fontSize: 11, color: "#475569" }}>
+              환율 데이터: 한국은행 · 교육 목적 · 실제 투자 결과와 다를 수 있습니다.
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // React 애플리케이션 렌더링
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

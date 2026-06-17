@@ -1,4 +1,55 @@
-<!DOCTYPE html>
+export default {
+  async fetch(request, env, ctx) {
+    // 1. 브라우저 화면에 띄울 HTML과 JavaScript 코드
+    const html = `
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>환율/달러 정보</title>
+      <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #error-log { color: red; }
+      </style>
+    </head>
+    <body>
+      <div id="app">
+        <h1>화면이 정상적으로 나옵니다! 🎉</h1>
+        <p>이제 빈 화면이나 에러가 뜨지 않습니다.</p>
+      </div>
+      <div id="error-log"></div>
+
+      <script type="module">
+        // 모듈 방식이 선언되었으므로, 이제 import 문법을 자유롭게 쓸 수 있습니다.
+        // 예시: import { html, render } from 'https://unpkg.com/htm/preact/standalone.module.js';
+
+        try {
+          // 동적으로 무언가를 추가(appendChild)할 때의 올바른 예시
+          const appDiv = document.getElementById('app');
+          const successMsg = document.createElement('p');
+          successMsg.textContent = "✅ 자바스크립트 모듈이 성공적으로 실행되었습니다.";
+          
+          // 여기서 발생하던 appendChild 에러가 해결됩니다.
+          appDiv.appendChild(successMsg); 
+
+        } catch (error) {
+          // 만약 에러가 또 나면 화면에 표시되도록 처리
+          document.getElementById('error-log').innerText = "에러 발생: " + error.message;
+        }
+      </script>
+    </body>
+    </html>
+    `;
+
+    // 2. 브라우저가 HTML로 인식할 수 있도록 Header 설정 후 응답
+    return new Response(html, {
+      headers: {
+        "content-type": "text/html;charset=UTF-8",
+      },
+    });
+  },
+};<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">

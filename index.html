@@ -1,72 +1,20 @@
 export default {
   async fetch(request, env, ctx) {
-    // 1. 브라우저 화면에 띄울 HTML과 JavaScript 코드
-    const html = `
-    <!DOCTYPE html>
-    <html lang="ko">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>환율/달러 정보</title>
-      <style>
-        body { font-family: sans-serif; padding: 20px; }
-        #error-log { color: red; }
-      </style>
-    </head>
-    <body>
-      <div id="app">
-        <h1>화면이 정상적으로 나옵니다! 🎉</h1>
-        <p>이제 빈 화면이나 에러가 뜨지 않습니다.</p>
-      </div>
-      <div id="error-log"></div>
-
-      <script type="module">
-        // 모듈 방식이 선언되었으므로, 이제 import 문법을 자유롭게 쓸 수 있습니다.
-        // 예시: import { html, render } from 'https://unpkg.com/htm/preact/standalone.module.js';
-
-        try {
-          // 동적으로 무언가를 추가(appendChild)할 때의 올바른 예시
-          const appDiv = document.getElementById('app');
-          const successMsg = document.createElement('p');
-          successMsg.textContent = "✅ 자바스크립트 모듈이 성공적으로 실행되었습니다.";
-          
-          // 여기서 발생하던 appendChild 에러가 해결됩니다.
-          appDiv.appendChild(successMsg); 
-
-        } catch (error) {
-          // 만약 에러가 또 나면 화면에 표시되도록 처리
-          document.getElementById('error-log').innerText = "에러 발생: " + error.message;
-        }
-      </script>
-    </body>
-    </html>
-    `;
-
-    // 2. 브라우저가 HTML로 인식할 수 있도록 Header 설정 후 응답
-    return new Response(html, {
-      headers: {
-        "content-type": "text/html;charset=UTF-8",
-      },
-    });
-  },
-};<!DOCTYPE html>
+    // 주의: 아래 html 변수 안의 \` 및 \${ } 기호들은 브라우저로 안전하게 넘기기 위해 이스케이프 처리된 것입니다. 임의로 지우지 마세요!
+    const html = `<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <!-- 모바일 환경(소식지 고객)을 위한 필수 메타 태그 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>은퇴자산 장기투자 비교</title>
   
-  <!-- React 및 Recharts 라이브러리를 CDN에서 직접 불러옵니다 -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
   <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
   
-  <!-- 브라우저에서 JSX를 읽을 수 있게 해주는 Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
-  <!-- 폰트 및 기본 여백 초기화 -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800;900&display=swap" rel="stylesheet">
   <style>
     body { margin: 0; padding: 0; background-color: #0a0a18; }
@@ -96,7 +44,6 @@ export default {
 <body>
   <div id="root"></div>
 
-  <!-- type="text/babel"을 통해 브라우저가 React 코드를 해석합니다 -->
   <script type="text/babel">
     const { useState, useMemo } = React;
     const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = window.Recharts;
@@ -119,21 +66,21 @@ export default {
     const HIST_AVG_FX = histFxChanges.reduce((a, b) => a + b, 0) / histFxChanges.length;
 
     const FX_SCENARIOS = [
-      { key: "hist",   label: `역사적 평균 +${(HIST_AVG_FX*100).toFixed(1)}%`, rate: HIST_AVG_FX, color: "#f59e0b", badge: "실제" },
+      { key: "hist",   label: \`역사적 평균 +\${(HIST_AVG_FX*100).toFixed(1)}%\`, rate: HIST_AVG_FX, color: "#f59e0b", badge: "실제" },
       { key: "flat",   label: "보합 0%",        rate: 0.00,  color: "#10b981" },
       { key: "weak2",  label: "원화약세 +2%",  rate: 0.02,  color: "#ef4444" },
       { key: "strong", label: "원화강세 -2%",  rate: -0.02, color: "#60a5fa" },
     ];
 
     const fmt = (n) => {
-      if (Math.abs(n) >= 1e8) return `${(n / 1e8).toFixed(1)}억원`;
-      if (Math.abs(n) >= 1e4) return `${(n / 1e4).toFixed(0)}만원`;
-      return `${Math.round(n).toLocaleString()}원`;
+      if (Math.abs(n) >= 1e8) return \`\${(n / 1e8).toFixed(1)}억원\`;
+      if (Math.abs(n) >= 1e4) return \`\${(n / 1e4).toFixed(0)}만원\`;
+      return \`\${Math.round(n).toLocaleString()}원\`;
     };
 
     const fmtAxis = (n) => {
-      if (Math.abs(n) >= 1e8) return `${(n / 1e8).toFixed(0)}억`;
-      if (Math.abs(n) >= 1e4) return `${(n / 1e4).toFixed(0)}만`;
+      if (Math.abs(n) >= 1e8) return \`\${(n / 1e8).toFixed(0)}억\`;
+      if (Math.abs(n) >= 1e4) return \`\${(n / 1e4).toFixed(0)}만\`;
       return n.toString();
     };
 
@@ -174,7 +121,7 @@ export default {
       badge: { display: "inline-block", background: "linear-gradient(90deg,#6366f1,#0ea5e9)", borderRadius: 6, padding: "4px 16px", fontSize: 12, fontWeight: 800, letterSpacing: 2, marginBottom: 12, color: "#fff" },
       h1: { fontSize: 22, fontWeight: 900, margin: "0 0 6px", lineHeight: 1.3, color: "#fff", wordBreak: "keep-all" },
       sub: { fontSize: 13, color: "#94a3b8", margin: 0, wordBreak: "keep-all" },
-      card: (color) => ({ background: `linear-gradient(135deg,${color}28,${color}10)`, border: `1.5px solid ${color}55`, borderRadius: 14, padding: "16px 14px", textAlign: "center" }),
+      card: (color) => ({ background: \`linear-gradient(135deg,\${color}28,\${color}10)\`, border: \`1.5px solid \${color}55\`, borderRadius: 14, padding: "16px 14px", textAlign: "center" }),
       cardLabel: { fontSize: 12, color: "#94a3b8", marginBottom: 6, fontWeight: 600 },
       cardVal: (color) => ({ fontSize: 20, fontWeight: 900, color, lineHeight: 1.2 }),
       cardSub: { fontSize: 11, color: "#64748b", marginTop: 4 },
@@ -185,13 +132,13 @@ export default {
       sliderVal: { color: "#e2e8f0", fontWeight: 900, fontSize: 16 },
       tab: (on) => ({
         flex: 1, padding: "12px 8px", borderRadius: 10, fontSize: 14, fontWeight: 700,
-        border: `2px solid ${on ? "#6366f1" : "rgba(255,255,255,0.1)"}`,
+        border: \`2px solid \${on ? "#6366f1" : "rgba(255,255,255,0.1)"}\`,
         background: on ? "rgba(99,102,241,0.25)" : "transparent",
         color: on ? "#a5b4fc" : "#64748b", cursor: "pointer", textAlign: "center", wordBreak: "keep-all"
       }),
       banner: (ok) => ({
         background: ok ? "rgba(6,182,212,0.12)" : "rgba(239,68,68,0.12)",
-        border: `1.5px solid ${ok ? "rgba(6,182,212,0.4)" : "rgba(239,68,68,0.4)"}`,
+        border: \`1.5px solid \${ok ? "rgba(6,182,212,0.4)" : "rgba(239,68,68,0.4)"}\`,
         borderRadius: 12, padding: "14px 18px", textAlign: "center", wordBreak: "keep-all"
       }),
     };
@@ -229,7 +176,7 @@ export default {
       const futureData = useMemo(() => {
         const yearly = buildYearly(pmt, accumY, deferY, ret / 100, inf / 100);
         return yearly.map((v, i) => ({
-          x: `${i}년`,
+          x: \`\${i}년\`,
           "총납입액": Math.round(v.paid),
           "원화(실질)": v.real,
           "달러(실질)": Math.round(v.real * Math.pow(1 + fx.rate, i)),
@@ -246,7 +193,7 @@ export default {
           const fxC = HISTORICAL_FX[yr] / BASE_FX;
 
           return {
-            x: `${yr}`,
+            x: \`\${yr}\`,
             "환율(₩/$)": HISTORICAL_FX[yr],
             "총납입액": Math.round(v.paid),
             "원화(실질)": v.real,
@@ -297,7 +244,7 @@ export default {
               <SliderRow label="예상 물가상승" value={inf} unit="%" min={0} max={10} step={0.5} onChange={setInf} color="#ef4444" />
             </div>
 
-            {/* 환율 시나리오 (미래 탭에서만 표시) */}
+            {/* 환율 시나리오 */}
             {tab === "future" && (
               <div style={{ ...S.section, marginTop: 16 }}>
                 <div style={S.sectionTitle}>환율 시나리오</div>
@@ -317,10 +264,10 @@ export default {
               <ResultCard label="원화투자 최종가치" value={tab === "future" ? FL["원화(실질)"] : HL["원화(실질)"]} color="#6366f1" />
               <div style={{ gridColumn: "1 / -1" }}>
                 <ResultCard
-                  label={`달러투자 최종가치 (${tab === "future" ? fx.label : "과거환율 반영"})`}
+                  label={\`달러투자 최종가치 (\${tab === "future" ? fx.label : "과거환율 반영"})\`}
                   value={tab === "future" ? FL["달러(실질)"] : HL["달러(실질)"]}
                   color="#0ea5e9"
-                  sub={`원화투자 대비 차액: ${isUsdBetter ? '+' : ''}${fmt(currentDiff)}`}
+                  sub={\`원화투자 대비 차액: \${isUsdBetter ? '+' : ''}\${fmt(currentDiff)}\`}
                 />
               </div>
             </div>
@@ -346,7 +293,7 @@ export default {
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Line type="monotone" dataKey="원화(실질)" stroke="#6366f1" strokeWidth={3} dot={false} />
                     <Line type="monotone" dataKey="달러(실질)" stroke="#0ea5e9" strokeWidth={3} dot={false} />
-                    <ReferenceLine x={`${accumY}년`} stroke="#f59e0b" strokeDasharray="3 3" label={{ position: "insideTopLeft", value: "납입종료", fill: "#f59e0b", fontSize: 12 }} />
+                    <ReferenceLine x={\`\${accumY}년\`} stroke="#f59e0b" strokeDasharray="3 3" label={{ position: "insideTopLeft", value: "납입종료", fill: "#f59e0b", fontSize: 12 }} />
                   </LineChart>
                 ) : (
                   <LineChart data={histData}>
@@ -354,7 +301,7 @@ export default {
                     <XAxis dataKey="x" stroke="#94a3b8" fontSize={12} tickLine={false} />
                     <YAxis yAxisId="left" stroke="#94a3b8" fontSize={12} tickFormatter={fmtAxis} width={55} tickLine={false} />
                     <YAxis yAxisId="right" orientation="right" stroke="#f59e0b" fontSize={12} domain={["dataMin - 50", "dataMax + 50"]} tickLine={false} width={45} />
-                    <Tooltip formatter={(val, name) => name === "환율(₩/$)" ? `${val}원` : fmt(val)} contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: 8, color: "#f1f5f9" }} />
+                    <Tooltip formatter={(val, name) => name === "환율(₩/$)" ? \`\${val}원\` : fmt(val)} contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: 8, color: "#f1f5f9" }} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Line yAxisId="left" type="monotone" dataKey="원화(실질)" stroke="#6366f1" strokeWidth={3} dot={false} />
                     <Line yAxisId="left" type="monotone" dataKey="달러(실질)" stroke="#0ea5e9" strokeWidth={3} dot={false} />
@@ -378,4 +325,13 @@ export default {
     root.render(<App />);
   </script>
 </body>
-</html>
+</html>`;
+
+    // 생성된 html 문자열을 브라우저에 응답으로 내려줍니다.
+    return new Response(html, {
+      headers: {
+        "content-type": "text/html;charset=UTF-8",
+      },
+    });
+  },
+};
